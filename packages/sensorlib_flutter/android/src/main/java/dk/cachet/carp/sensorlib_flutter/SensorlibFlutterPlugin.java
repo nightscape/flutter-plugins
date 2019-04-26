@@ -1,31 +1,9 @@
 package dk.cachet.carp.sensorlib_flutter;
 
-import io.flutter.plugin.common.MethodCall;
-import io.flutter.plugin.common.MethodChannel;
-import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
-import io.flutter.plugin.common.MethodChannel.Result;
-import io.flutter.plugin.common.PluginRegistry.Registrar;
-
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
-
-/**
- * SensorlibFlutterPlugin
- * public class SensorlibFlutterPlugin implements MethodCallHandler {
- * /** Plugin registration. *
-
- *
- * @Override public void onMethodCall(MethodCall call, Result result) {
- * if (call.method.equals("getPlatformVersion")) {
- * result.success("Android " + android.os.Build.VERSION.RELEASE);
- * } else {
- * result.notImplemented();
- * }
- * }
- * }
- */
 
 
 /**
@@ -35,9 +13,9 @@ public class SensorlibFlutterPlugin implements EventChannel.StreamHandler, Metho
 {
 
     private EventChannel.EventSink eventSink;
+    private PermissionManager manager;
     private Registrar registrar;
-    static String USER_DATA_KEY = "user_data";
-    static String USER_DATA_METHOD = "userData";
+    static String CONNECT_DEVICE = "connectDevice";
 
     /**
      * Plugin registration.
@@ -70,21 +48,44 @@ public class SensorlibFlutterPlugin implements EventChannel.StreamHandler, Metho
     @Override
     public void onCancel(Object o)
     {
+        manager.stopService();
         this.eventSink = null;
-
     }
 
     @Override
     public void onMethodCall(MethodCall methodCall, MethodChannel.Result result)
     {
-        if (methodCall.method.equals(USER_DATA_METHOD))
+        if (methodCall.method.equals(CONNECT_DEVICE))
         {
-            PermissionManager manager = new PermissionManager(registrar.activity(), this.eventSink);
-            manager.startSensorlibService();
+            String deviceName = methodCall.argument("deviceName");
+            connectToDevice(deviceName, methodCall);
         } else
         {
             result.notImplemented();
         }
+    }
+
+    private void connectToDevice(String deviceName, MethodCall methodCall)
+    {
+        switch (deviceName)
+        {
+            case "shimmer":
+            {
+                String macAddress = methodCall.argument("macAddress");
+                SensorHandler sh = new ShimmerSensorHandler(registrar.activity(), this.eventSink, macAddress);
+                manager = new PermissionManager(registrar.activity(), sh);
+                break;
+            }
+            case "internal":
+            {
+                SensorHandler sh = new InternalSensorHandler(registrar.activity(), this.eventSink);
+                manager = new PermissionManager(registrar.activity(), sh);
+                break;
+            }
+            default:
+                throw new RuntimeException("Unknown device: " + deviceName);
+        }
+        manager.startService();
     }
 
 }

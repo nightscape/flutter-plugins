@@ -8,6 +8,7 @@ import 'dart:io' show Platform;
 /// thrown whenever the plugin is used on platforms other than Android
 class SensorLibException implements Exception {
   String _cause;
+
   SensorLibException(this._cause);
 
   @override
@@ -245,17 +246,18 @@ class SensorLibStatus extends SensorLibDataPoint {
 SensorLibDataPoint parseDataPoint(dynamic javaMap) {
   Map<String, dynamic> data = Map<String, dynamic>.from(javaMap);
   String _batteryLevel =
-  data.containsKey(BATTERY_LEVEL) ? data[BATTERY_LEVEL] : null;
+      data.containsKey(BATTERY_LEVEL) ? data[BATTERY_LEVEL] : null;
   String _tapMarker = data.containsKey(TAP_MARKER) ? data[TAP_MARKER] : null;
   String _stepCount = data.containsKey(STEP_COUNT) ? data[STEP_COUNT] : null;
   String _met = data.containsKey(MET) ? data[MET] : null;
   String _metLevel = data.containsKey(MET_LEVEL) ? data[MET_LEVEL] : null;
   String _bodyPosition =
-  data.containsKey(BODY_POSITION) ? data[BODY_POSITION] : null;
+      data.containsKey(BODY_POSITION) ? data[BODY_POSITION] : null;
   String _movementAcceleration = data.containsKey(MOVEMENT_ACCELERATION)
-  ? data[MOVEMENT_ACCELERATION]
+      ? data[MOVEMENT_ACCELERATION]
       : null;
-  String _connectionStatus = data.containsKey(CONNECTION_STATUS) ? data[CONNECTION_STATUS] : null;
+  String _connectionStatus =
+      data.containsKey(CONNECTION_STATUS) ? data[CONNECTION_STATUS] : null;
 
   print(_connectionStatus);
 
@@ -284,27 +286,27 @@ SensorLibDataPoint parseDataPoint(dynamic javaMap) {
     return new SensorLibStatus(_connectionStatus);
   }
   return null;
-  }
+}
 
 /// The main plugin class which establishes a [MethodChannel] and an [EventChannel].
-class SensorLib {
+class SensorlibFlutter {
   MethodChannel _methodChannel = MethodChannel('sensorlib.method_channel');
   EventChannel _eventChannel = EventChannel('sensorlib.event_channel');
-  Stream<SensorLibDataPoint> _sensorlibStream;
-  UserData _userData;
 
-  SensorLib(this._userData);
-
-  Stream<SensorLibDataPoint> get sensorlibStream {
+  Stream<Map<String, dynamic>> connectDevice(String deviceName, Map<String, dynamic> args) {
     if (Platform.isAndroid) {
-      if (_sensorlibStream == null) {
-        Map<String, dynamic> args = {'user_data': _userData.asMap};
-        _methodChannel.invokeMethod('userData', args);
-        _sensorlibStream =
-            _eventChannel.receiveBroadcastStream().map(parseDataPoint);
-      }
+      Stream<Map<String, dynamic>> _sensorlibStream = _eventChannel
+            .receiveBroadcastStream()
+            .map((d) => Map<String, dynamic>.from(d));
+      final Map<String, dynamic> allArgs = {"deviceName": deviceName };
+      allArgs.addAll(args);
+      _sensorlibStream.first.then((map) => 0);
+      Future.delayed(Duration(seconds: 1)).then((_) => _methodChannel.invokeMethod("connectDevice", allArgs));
       return _sensorlibStream;
+    } else {
+      throw SensorLibException('SensorLib API exclusively available on Android!');
     }
-    throw SensorLibException('SensorLib API exclusively available on Android!');
   }
+
+  Future<String> get test => Future.sync(() => "Yes");
 }

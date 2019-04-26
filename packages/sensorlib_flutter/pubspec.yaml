@@ -1,8 +1,8 @@
 name: sensorlib_flutter
 description: A CARP plugin to retrieve sensor data via SensorLib
 version: 0.0.1
-author:
-homepage:
+author: Martin Mauch <martin.mauch@gmail.com>
+homepage: https://pub.dartlang.org/packages/carp_mobile_sensing
 
 environment:
   sdk: ">=2.1.0 <3.0.0"

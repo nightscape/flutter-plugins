@@ -7,19 +7,11 @@ import android.os.Build;
 import android.os.Handler;
 import android.util.Log;
 
-import de.fau.sensorlib.SensorDataProcessor;
-import de.fau.sensorlib.SensorInfo;
-import de.fau.sensorlib.dataframe.SensorDataFrame;
-import de.fau.sensorlib.sensors.InternalSensor;
-import io.flutter.plugin.common.EventChannel;
+public class PermissionManager implements SensorHandler
+{
 
-public class PermissionManager {
-
-    InternalSensor sensor;
-    private EventChannel.EventSink eventSink;
 
     private static String[] permissions = new String[]{
-            Manifest.permission.RECEIVE_BOOT_COMPLETED,
             Manifest.permission.BLUETOOTH,
             Manifest.permission.BLUETOOTH_ADMIN,
             Manifest.permission.ACCESS_FINE_LOCATION,
@@ -27,30 +19,42 @@ public class PermissionManager {
             Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE
     };
+    private final SensorHandler wrappedSensorHandler;
 
     private Activity activity;
 
 
-    public PermissionManager(Activity activity, EventChannel.EventSink eventSink) {
-        Log.d("PermissionActivity", this.eventSink.toString());
+    public PermissionManager(Activity activity, SensorHandler wrappedSensorHandler)
+    {
         this.activity = activity;
-        this.eventSink = eventSink;
+        this.wrappedSensorHandler = wrappedSensorHandler;
+        Log.d("PermissionActivity", this.wrappedSensorHandler.toString());
     }
 
-    public void startSensorlibService() {
-        if (!arePermissionsGranted()) {
+    public void startService()
+    {
+        if (!arePermissionsGranted())
+        {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
             {
                 activity.requestPermissions(permissions, 0);
             }
             checkDelayed();
-        } else {
-            startService();
+        } else
+        {
+            wrappedSensorHandler.startService();
         }
     }
 
-    private Boolean arePermissionsGranted() {
-        for (String permission : permissions) {
+    public void stopService()
+    {
+        wrappedSensorHandler.stopService();
+    }
+
+    private Boolean arePermissionsGranted()
+    {
+        for (String permission : permissions)
+        {
             if (!isPermissionGranted(permission))
                 return false;
         }
@@ -58,39 +62,26 @@ public class PermissionManager {
         return true;
     }
 
-    private Boolean isPermissionGranted(String permission) {
+    private Boolean isPermissionGranted(String permission)
+    {
         int res = activity.checkCallingOrSelfPermission(permission);
         return (res == PackageManager.PERMISSION_GRANTED);
     }
 
 
-    private void checkDelayed() {
+    private void checkDelayed()
+    {
         Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            public void run() {
+        handler.postDelayed(new Runnable()
+        {
+            public void run()
+            {
                 if (arePermissionsGranted())
-                    startService();
+                    wrappedSensorHandler.startService();
                 else
                     checkDelayed();
             }
         }, 1000);
     }
 
-    private void startService()
-    {
-        sensor = new InternalSensor(activity, new SensorInfo("foo", "bar"), new SensorDataProcessor() {
-            @Override
-            public void onNewData(SensorDataFrame sensorDataFrame) {
-                eventSink.success(sensorDataFrame);
-            }
-        });
-        try
-        {
-            sensor.connect();
-            sensor.startStreaming();
-        } catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
 }

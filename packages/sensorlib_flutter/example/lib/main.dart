@@ -25,7 +25,7 @@ class _MyAppState extends State<MyApp> {
     String platformVersion;
     // Platform messages may fail, so we use a try/catch PlatformException.
     try {
-      platformVersion = await SensorlibFlutter.platformVersion;
+      platformVersion = await SensorlibFlutter().test;
     } on PlatformException {
       platformVersion = 'Failed to get platform version.';
     }
@@ -42,13 +42,24 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    StreamBuilder<Map<String, dynamic>> builder = new StreamBuilder(
+        stream: SensorlibFlutter().connectDevice("internal", {}),
+        builder: (context, asyncSnapshot) {
+          if (asyncSnapshot.hasError) {
+            return new Text("Error!");
+          } else if (asyncSnapshot.data == null) {
+            return Text("Waiting");
+          } else {
+            return Text(asyncSnapshot.data.toString());
+          }
+        });
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
           title: const Text('Plugin example app'),
         ),
         body: Center(
-          child: Text('Running on: $_platformVersion\n'),
+          child: builder,
         ),
       ),
     );
