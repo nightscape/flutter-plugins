@@ -16,6 +16,7 @@ import android.os.Message;
 import android.widget.Toast;
 
 import com.shimmerresearch.android.Shimmer;
+import com.shimmerresearch.bluetooth.ShimmerBluetooth;
 import com.shimmerresearch.driver.Configuration;
 import com.shimmerresearch.driver.FormatCluster;
 import com.shimmerresearch.driver.ObjectCluster;
@@ -50,13 +51,10 @@ public class ShimmerSensorHandler implements SensorHandler
             switch (msg.what)
             {
 
-                case Shimmer.MESSAGE_STATE_CHANGE:
+                case ShimmerBluetooth.MSG_IDENTIFIER_STATE_CHANGE:
                     switch (msg.arg1)
                     {
-                        case Shimmer.STATE_CONNECTED:
-                            //this has been deprecated
-                            break;
-                        case Shimmer.MSG_STATE_FULLY_INITIALIZED:
+                        case ShimmerBluetooth.NOTIFICATION_SHIMMER_FULLY_INITIALIZED:
                             Log.d("ShimmerActivity", "Message Fully Initialized Received from Shimmer driver");
                             try
                             {
@@ -65,46 +63,29 @@ public class ShimmerSensorHandler implements SensorHandler
                             {
                                 e.printStackTrace();
                             }
-                        case Shimmer.STATE_CONNECTING:
+                        case ShimmerBluetooth.NOTIFICATION_SHIMMER_STATE_CHANGE:
                             Log.d("ShimmerActivity", "Driver is attempting to establish connection with Shimmer device");
                             break;
-                        case Shimmer.MSG_STATE_STREAMING:
-                            break;
-                        case Shimmer.MSG_STATE_STOP_STREAMING:
-                            break;
-                        case Shimmer.STATE_NONE:
+                        case ShimmerBluetooth.NOTIFICATION_SHIMMER_STOP_STREAMING:
                             Log.d("ShimmerActivity", "Shimmer No State");
                             break;
                     }
                     break;
-                case Shimmer.MESSAGE_READ:
+                case ShimmerBluetooth.MSG_IDENTIFIER_DATA_PACKET:
                     Map<String, Object> m = new HashMap<String, Object>();
-                    ObjectCluster sensorDataFrame = (ObjectCluster) msg.obj;
-                    m.put("timestamp", sensorDataFrame.mSystemTimeStamp);
-                    m.put("sensor", sensorDataFrame.mMyName);
-                    for (Map.Entry<String, FormatCluster> entry : sensorDataFrame.mPropertyCluster.entries())
+                    ObjectCluster obj = (ObjectCluster) msg.obj;
+                    if (obj != null)
                     {
-                        m.put(entry.getKey(), entry.getValue().mData);
+                        m.put("timestamp", obj.mSystemTimeStamp);
+                        m.put("sensor", obj.getShimmerName());
+                        for (Map.Entry<String, FormatCluster> entry : obj.mPropertyCluster.entries())
+                        {
+                            m.put(entry.getKey(), entry.getValue().mData);
+                        }
                     }
                     eventSink.success(m);
 
                     break;
-                case Shimmer.MESSAGE_ACK_RECEIVED:
-
-                    break;
-                case Shimmer.MESSAGE_DEVICE_NAME:
-                    // save the connected device's name
-                    break;
-
-
-                case Shimmer.MESSAGE_TOAST:
-                    break;
-
-                case Shimmer.MESSAGE_LOG_AND_STREAM_STATUS_CHANGED:
-                    int docked = msg.arg1;
-                    int sensing = msg.arg2;
-                    break;
-
             }
 
 
@@ -120,7 +101,7 @@ public class ShimmerSensorHandler implements SensorHandler
         {
             // The Handler that gets information back from the BluetoothChatService
             Handler mHandler = new ShimmerHandler(eventSink);
-            sensor = new Shimmer(this.activity, mHandler, "Shimmer", false);
+            sensor = new Shimmer(mHandler);
             sensor.connect(macAddress, "default");
             sensor.startStreaming();
         } catch (Exception e)
