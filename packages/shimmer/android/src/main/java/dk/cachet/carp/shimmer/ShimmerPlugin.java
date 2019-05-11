@@ -57,19 +57,17 @@ public class ShimmerPlugin implements EventChannel.StreamHandler, MethodChannel.
     {
         if (methodCall.method.equals(CONNECT_DEVICE))
         {
-            String deviceName = methodCall.argument("deviceName");
-            connectToDevice(deviceName, methodCall);
+            connectToDevice(methodCall);
         } else
         {
             result.notImplemented();
         }
     }
 
-    private void connectToDevice(String deviceName, MethodCall methodCall)
+    private void connectToDevice(MethodCall methodCall)
     {
         String macAddress = methodCall.argument("macAddress");
-        SensorHandler sh = new ShimmerSensorHandler(registrar.activity(), this.eventSink, macAddress);
-        manager = sh; //new PermissionManager(registrar.activity(), sh);
+        manager = new ShimmerSensorHandler(registrar.activity(), this.eventSink, macAddress);
         manager.startService();
     }
 

@@ -23,11 +23,10 @@ import com.shimmerresearch.managers.bluetoothManager.ShimmerBluetoothManager;
 
 public class ShimmerSensorHandler implements SensorHandler
 {
-    private Shimmer sensor;
     private final Activity activity;
     private final EventChannel.EventSink eventSink;
     private final String macAddress;
-    final static String LOG_TAG = "BluetoothManagerExample";
+    final static String LOG_TAG = "ShimmerSensorHandler";
     private ShimmerBluetoothManagerAndroid btManager;
 
     public ShimmerSensorHandler(Activity activity, EventChannel.EventSink eventSink, String macAddress)
@@ -35,7 +34,6 @@ public class ShimmerSensorHandler implements SensorHandler
         this.activity = activity;
         this.eventSink = eventSink;
         this.macAddress = macAddress;
-        Log.d("PermissionActivity", this.eventSink.toString());
     }
     private ShimmerDevice shimmerDevice;
     public class ShimmerHandler extends Handler {
